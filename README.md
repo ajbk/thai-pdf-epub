@@ -32,6 +32,35 @@ npm run dev                        # เปิด http://localhost:3000
 
 รับ API key ได้ที่ [playground.opentyphoon.ai](https://playground.opentyphoon.ai) (เมนู API Keys)
 
+## รันแบบ Local (Ollama) — เร็วกว่า ไม่มี rate limit ⚡
+
+ถ้ามี GPU (NVIDIA) สามารถรัน Typhoon OCR ในเครื่องผ่าน [Ollama](https://ollama.com) ได้ —
+ความเร็วต่อหน้าพอ ๆ กับ cloud (~6 วินาที) แต่ **ยิงรัวได้ไม่ติด rate limit** และไม่มีค่าใช้จ่าย
+
+ทดสอบแล้วบน **RTX 3060 12GB**: ~6 วินาที/หน้า (หลัง warm-up), ใช้ VRAM ~4.7GB
+
+```bash
+# 1) ติดตั้ง Ollama (ดู https://ollama.com/download)
+# 2) ดึงโมเดล Typhoon OCR 1.5 (3B, Qwen3-VL)
+ollama pull scb10x/typhoon-ocr1.5-3b
+
+# 3) ใน .env.local ชี้แอปมาที่ Ollama
+#    TYPHOON_OCR_API_KEY=ollama          (อะไรก็ได้ ห้ามว่าง)
+#    TYPHOON_BASE_URL=http://127.0.0.1:11434/v1
+#    TYPHOON_OCR_MODEL=scb10x/typhoon-ocr1.5-3b
+#    NEXT_PUBLIC_OCR_MIN_INTERVAL_MS=300
+
+# 4) เริ่มทั้งระบบด้วยสคริปต์ช่วย (ตั้งค่า Ollama + pre-warm + เปิดเว็บ)
+./start-local.sh
+```
+
+แนะนำตั้งค่า Ollama เหล่านี้ (สคริปต์ `start-local.sh` ตั้งให้แล้ว):
+- `OLLAMA_CONTEXT_LENGTH=16384` — รองรับรูปหน้าใหญ่ + ข้อความยาว (ค่า default 4096 น้อยไป)
+- `OLLAMA_FLASH_ATTENTION=1` — ประหยัด VRAM
+- `OLLAMA_KEEP_ALIVE=-1` — คงโมเดลใน VRAM ไม่ต้องโหลดซ้ำ (หน้าแรกของ session โหลดครั้งเดียว)
+
+> สลับกลับไป cloud ได้ทุกเมื่อ แค่คอมเมนต์ `TYPHOON_BASE_URL` ออกแล้วใส่ cloud API key
+
 ## Deploy บน Vercel
 
 1. Push โค้ดขึ้น GitHub

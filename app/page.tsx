@@ -13,8 +13,13 @@ interface PageState {
   error?: string;
 }
 
-// Typhoon free tier: ~20 req/min => เว้นช่วง ~3.2s/หน้า กัน 429
-const MIN_INTERVAL_MS = 3200;
+// เว้นช่วงต่อหน้า: cloud free tier ~20 req/min => 3.2s; local (Ollama) ตั้งเป็น 0 ได้
+// ปรับผ่าน env NEXT_PUBLIC_OCR_MIN_INTERVAL_MS (inline ตอน build/dev)
+const _intervalEnv = process.env.NEXT_PUBLIC_OCR_MIN_INTERVAL_MS;
+const MIN_INTERVAL_MS =
+  _intervalEnv !== undefined && _intervalEnv !== ""
+    ? Number(_intervalEnv)
+    : 3200;
 const MAX_RETRY = 3;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
