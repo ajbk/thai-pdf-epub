@@ -61,6 +61,24 @@ ollama pull scb10x/typhoon-ocr1.5-3b
 
 > สลับกลับไป cloud ได้ทุกเมื่อ แค่คอมเมนต์ `TYPHOON_BASE_URL` ออกแล้วใส่ cloud API key
 
+## แปลงทั้งเล่มแบบ CLI (batch) + ฝังรูป
+
+สำหรับหนังสือทั้งเล่ม (หลายร้อยหน้า) ใช้สคริปต์ใน `tools/` รันกับ Ollama local ได้เลย —
+render หน้า (pdfjs + `@napi-rs/canvas`, ไม่ต้องใช้ poppler) → OCR → ประกอบ EPUB เซฟทีละหน้า (resume ได้)
+
+```bash
+# แปลงทั้งเล่ม (หน้า 1–610) -> <outDir>/book.epub
+node --experimental-strip-types tools/convert.mjs "<book.pdf>" <outDir> 1 610
+
+# ประกอบ EPUB ใหม่ + ฝัง "รูปจริง" เฉพาะหน้าที่ OCR เจอ <figure>
+#   (อ่าน markdown เดิม ไม่ต้อง OCR ซ้ำ) -> <outDir>/book-with-images.epub
+node --experimental-strip-types tools/rebuild_epub.mjs "<book.pdf>" <outDir>
+```
+
+ทดสอบจริง: Sapiens 610 หน้า บน RTX 3060 → ~118 นาที, EPUB ข้อความ 602KB / มีรูป 9.9MB (69 รูป)
+
+> `lib/epub.ts` รองรับฝังรูปผ่านพารามิเตอร์ `assets` ของ `buildEpub(meta, chapters, assets)`
+
 ## Deploy บน Vercel
 
 1. Push โค้ดขึ้น GitHub

@@ -13,6 +13,13 @@ export interface EpubMeta {
   language: string; // เช่น "th"
 }
 
+export interface EpubAsset {
+  /** ชื่อไฟล์ใต้ OEBPS/images/ เช่น "p0005.jpg" — markdown อ้างด้วย src="images/p0005.jpg" */
+  fileName: string;
+  data: Uint8Array;
+  mediaType: string; // เช่น "image/jpeg"
+}
+
 function escapeXml(s: string): string {
   return s
     .replace(/&/g, "&amp;")
@@ -79,11 +86,14 @@ th { background: #f0f0f0; }
 aside.figure { background: #f7f7f7; border-left: 4px solid #999; padding: 0.6em 1em; margin: 1em 0; font-style: italic; color: #333; }
 p.page-number { text-align: center; color: #999; font-size: 0.85em; margin: 1.2em 0; }
 img { max-width: 100%; height: auto; }
+img.figure-image { display: block; margin: 1em auto; max-width: 100%; border: 1px solid #ddd; }
+p.figure-caption { text-align: center; color: #888; font-size: 0.85em; margin-top: 0.3em; }
 `;
 
 export async function buildEpub(
   meta: EpubMeta,
-  chapters: EpubChapter[]
+  chapters: EpubChapter[],
+  assets: EpubAsset[] = []
 ): Promise<Blob> {
   const zip = new JSZip();
 
@@ -102,6 +112,11 @@ export async function buildEpub(
 
   const oebps = zip.folder("OEBPS")!;
   oebps.file("style.css", STYLE_CSS);
+
+  // ฝังไฟล์รูป (ถ้ามี) ไว้ใต้ OEBPS/images/
+  for (const a of assets) {
+    oebps.file(`images/${a.fileName}`, a.data);
+  }
 
   const chapterFiles: { id: string; href: string; title: string }[] = [];
   for (let i = 0; i < chapters.length; i++) {
@@ -123,6 +138,12 @@ export async function buildEpub(
         `    <item id="${c.id}" href="${c.href}" media-type="application/xhtml+xml" />`
     )
     .join("\n");
+  const assetManifest = assets
+    .map(
+      (a, i) =>
+        `    <item id="img${i + 1}" href="images/${a.fileName}" media-type="${a.mediaType}" />`
+    )
+    .join("\n");
   const spineItems = chapterFiles
     .map((c) => `    <itemref idref="${c.id}" />`)
     .join("\n");
@@ -142,7 +163,7 @@ export async function buildEpub(
     <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav" />
     <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml" />
     <item id="css" href="style.css" media-type="text/css" />
-${manifestItems}
+${manifestItems}${assetManifest ? "\n" + assetManifest : ""}
   </manifest>
   <spine toc="ncx">
 ${spineItems}

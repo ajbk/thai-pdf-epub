@@ -1,0 +1,10 @@
+import { readFile } from "node:fs/promises";
+import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
+const data = new Uint8Array(await readFile(process.argv[2]));
+const doc = await pdfjs.getDocument({ data, isEvalSupported: false, useSystemFonts: true }).promise;
+console.log("numPages:", doc.numPages);
+const p1 = await doc.getPage(1);
+const vp = p1.getViewport({ scale: 1 });
+console.log("page1 (pt):", Math.round(vp.width) + "x" + Math.round(vp.height));
+const tc = await p1.getTextContent();
+console.log("page1 text items:", tc.items.length, "(0 = สแกนเป็นรูป ต้อง OCR)");
